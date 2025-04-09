@@ -35,8 +35,8 @@ public:
 				instance->dragon_move_right_cmd();
 				break;
 			case SDLK_w:
-				//is_move_up = true;
-				instance->dragon_move_up_cmd();
+				is_move_up = true;
+				//instance->dragon_move_up_cmd();
 				break;
 			case SDLK_s:
 				//is_move_down = true;
@@ -96,7 +96,7 @@ public:
 		if (!is_releasing_flash && !is_releasing_impact)
 		{
 			position += velocity * delta;
-
+			
 			//防止龙越界
 			const SDL_Rect& rect_map = ConfigManager::instance()->rect_tile_map;
 			if (position.x < rect_map.x) position.x = rect_map.x;
@@ -197,6 +197,8 @@ public:
 					enemy->slow_down();
 				}
 			}
+
+
 		}
 
 		//每帧和金币进行检测
@@ -278,6 +280,11 @@ public:
 	void set_is_releasing_impact(bool val)
 	{
 		is_releasing_impact = val;
+	}
+
+	void set_positon(Vector2 position)
+	{
+		this->position = position;
 	}
 
 protected:

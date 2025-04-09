@@ -1,8 +1,9 @@
 #pragma once
 
-
+#include <mutex>
 #include <iostream>
 #include "tower_type.h"
+
 
 // 网络命令类型
 enum class CommandType
@@ -31,7 +32,8 @@ enum  class DargonCommandType
 	Dargon_stop_move_up,
 	Dargon_stop_move_down,
 	Dargon_stop_skill_j,
-	Dargon_stop_skill_k
+	Dargon_stop_skill_k,
+	Dargon_move,
 };
 
 
@@ -81,7 +83,7 @@ public:
 
 		str_address = str_stream.str();
 
-		//TCP传输协议
+		//Udp传输协议
 		sock = socket(AF_INET, SOCK_STREAM, 0);
 		sockaddr_in server_addr;
 		server_addr.sin_family = AF_INET;
@@ -121,9 +123,9 @@ public:
 		return random;
 	}
 
-	uint32_t get_current_frame()
+	uint32_t* get_current_frame()
 	{
-		return current_frame;
+		return &current_frame;
 	}
 
 	void set_random(int val)
@@ -135,6 +137,6 @@ private:
     int id_player = 0;                                                  //玩家id
 	int random = 0;                                                     //随机数
 	uint32_t current_frame = 0;                                         //当前的逻辑帧
-    SOCKET sock;                                                        //套接字
+	SOCKET sock;                                                        //套接字
 	std::string str_address;                                            //服务器地址
 };

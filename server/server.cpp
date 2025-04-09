@@ -284,7 +284,7 @@ public:
         WSADATA wsa;
         WSAStartup(MAKEWORD(2, 2), &wsa);
 
-        //创建监听套接字 AF_INET：使用ipv4 ，tcp传输协议
+        //创建监听套接字 AF_INET：使用ipv4 ，UDP传输协议
         server_socket = socket(AF_INET, SOCK_STREAM, 0);
         if (server_socket == -1)
         {
@@ -305,6 +305,8 @@ public:
             std::cout << "套接字绑定失败！" << std::endl;
             exit(-1);
         }
+
+        //udp不需要监听
         //开始监听连接请求 最多允许5个客户端在等待连接
         if (listen(server_socket, 128) == -1)
         {
@@ -339,9 +341,6 @@ public:
             //收集本帧所有的指令
             collect_commands(current_frame);
 
-            //广播当前服务端逻辑帧 同步帧率
-            broadcast_current_frame(current_frame);
-
             //广播当前随机数
             broadcast_current_random(rand());
 
@@ -350,6 +349,9 @@ public:
 
             //逻辑帧推进
             current_frame++;
+
+            //广播当前服务端逻辑帧 同步帧率
+            broadcast_current_frame(current_frame);
 
             Uint64 current_counuer = SDL_GetPerformanceCounter();
             //delta 为过了多少秒
@@ -397,8 +399,12 @@ private:
             //变成通信套接字
             SOCKET client_socket = accept(server_socket, NULL, NULL);
 
+            // 设置非阻塞模式
+            u_long mode = 1;
+            ioctlsocket(client_socket, FIONBIO, &mode);
+
             //存储客户端套接字
-            clients.push_back(client_socket);
+            clients.emplace_back(client_socket);
 
             //分配玩家id 先进入的玩家为0，后者为1
             char player_id = static_cast<char>(clients.size() - 1);
@@ -408,13 +414,16 @@ private:
         }
 
         std::cout << "玩家都准备就绪开始游戏"  << std::endl;
-        for (auto& client : clients)
-        {
-            //发送开始游戏指令
-             Command cmd{};
-             cmd.type = CommandType::StartGame;
-             send(client, (char*)&cmd, sizeof(cmd), 0);
-        }
+
+        auto& play_1_client = clients[0];
+        auto& play_2_client = clients[1];
+        
+        //发送开始游戏指令
+         Command cmd{};
+         cmd.type = CommandType::StartGame;
+         send(play_1_client, (char*)&cmd, sizeof(cmd), 0);
+         send(play_2_client, (char*)&cmd, sizeof(cmd), 0);
+        
         
     }
 
@@ -423,10 +432,6 @@ private:
     {
         for (auto& client : clients)
         {
-            // 设置非阻塞模式
-            u_long mode = 1;
-            ioctlsocket(client, FIONBIO, &mode);
-
             Command cmd;
             //接受客户端当前帧的请求
             while (recv(client, (char*)&cmd, sizeof(cmd), MSG_PEEK) > 0)
@@ -437,12 +442,10 @@ private:
                     recv(client, (char*)&cmd, sizeof(cmd), 0);
                     if (cmd.player_Id == 0)
                     {
-                        std::cout << "play0" << std::endl;
                         is_ready_play_zero = true;
                     }
                     else
                     {
-                        std::cout << "play1" << std::endl;
                         is_ready_play_one = true;
                     }
                     if (is_ready_play_one && is_ready_play_zero)
@@ -454,6 +457,8 @@ private:
 
                         is_ready_play_one = false;
                         is_ready_play_zero = false;
+
+                        std::cout << "服务端接受到下一波敌人出现命令" << std::endl;
                     }
                     continue;
                 }
@@ -463,8 +468,34 @@ private:
                     frame_commands[current_frame].push_back(cmd);
                     continue;
                 }
-                if (cmd.frame >= current_frame)
+                if (cmd.frame + 100 >= current_frame)
                 {
+                    switch (cmd.type)
+                    {
+                    case CommandType::BuildTower:
+                        std::cout << "服务端接受到建造防御塔命令" << std::endl;
+                        break;
+                    case CommandType::UpgradeTower:
+                        std::cout << "服务端接受到升级防御塔命令" << std::endl;
+                        break;
+                    case CommandType::SpawnEnemy:
+                        break;
+                    case CommandType::SpawnRand:
+                        break;
+                    case CommandType::DragonMove:
+                        break;
+                    case CommandType::StartGame:
+                        break;
+                    case CommandType::UpdataFrame:
+                        break;
+                    case CommandType::DecreaseCoin:
+                        std::cout << "服务端接受到减少金币命令" << std::endl;
+                        break;
+                    case CommandType::increaseCoin:
+                        std::cout << "服务端接受到增加金币命令" << std::endl;
+                       
+                        break;
+                    }
                     recv(client, (char*)&cmd, sizeof(cmd), 0);
                     frame_commands[current_frame].push_back(cmd);
                 }
@@ -511,14 +542,14 @@ private:
     void broadcastCommands(uint32_t current_frame)
     {
         auto& commands = frame_commands[current_frame];
-        for (auto& client : clients) 
+        auto& play_1_client = clients[0];
+        auto& play_2_client = clients[1];
+        for (auto& cmd : commands) 
         {
-            for (auto& cmd : commands) 
-            {
-                std::cout << "current_frame" << current_frame << std::endl;
-                send(client, (char*)&cmd, sizeof(cmd), 0);
-            }
+            send(play_1_client, (char*)&cmd, sizeof(cmd), 0);
+            send(play_2_client, (char*)&cmd, sizeof(cmd), 0);
         }
+        
     }
 };
 

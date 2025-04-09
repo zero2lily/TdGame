@@ -13,6 +13,8 @@ Project("{54435603-DBB4-11D2-8724-00A0C9A8B90C}") = "Setup1", "Setup1\Setup1.vdp
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Server", "server\server.vcxproj", "{F838E20A-A2A2-49B6-8C34-477E8B0ABFD2}"
 EndProject
+Project("{54435603-DBB4-11D2-8724-00A0C9A8B90C}") = "Setup2", "Setup2\Setup2.vdproj", "{657E2043-FDBC-F1DC-4CD9-351906DA97D6}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -57,6 +59,10 @@ Global
 		{F838E20A-A2A2-49B6-8C34-477E8B0ABFD2}.Release|x64.Build.0 = Release|x64
 		{F838E20A-A2A2-49B6-8C34-477E8B0ABFD2}.Release|x86.ActiveCfg = Release|Win32
 		{F838E20A-A2A2-49B6-8C34-477E8B0ABFD2}.Release|x86.Build.0 = Release|Win32
+		{657E2043-FDBC-F1DC-4CD9-351906DA97D6}.Debug|x64.ActiveCfg = Debug
+		{657E2043-FDBC-F1DC-4CD9-351906DA97D6}.Debug|x86.ActiveCfg = Debug
+		{657E2043-FDBC-F1DC-4CD9-351906DA97D6}.Release|x64.ActiveCfg = Release
+		{657E2043-FDBC-F1DC-4CD9-351906DA97D6}.Release|x86.ActiveCfg = Release
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

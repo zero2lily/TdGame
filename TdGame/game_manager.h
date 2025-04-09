@@ -303,7 +303,7 @@ private:
 	//Á½¸ö·ÅÖÃÂÖÅÌ
 	Panel* place_panel = nullptr;
 	Panel* upgrade_panel = nullptr;
-	Banner* banner = nullptr;
+	Banner* banner = nullptr;                                    
 	
 private:
 	void init_assert(bool flag, const char* err_msg)

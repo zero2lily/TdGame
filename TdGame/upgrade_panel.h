@@ -175,7 +175,7 @@ protected:
 
 		if (val_top > 0 &&  val_top <= instance->get_current_coin_num())
 		{
-			ClientManager::instance()->upgrade_tower_cmd(target_tower->get_tower_type(), idx_tile_selected);
+			BreakManager::instance()->upgrade_tower_cmd(target_tower->get_tower_type(), idx_tile_selected);
 			//TowerManager::instance()->upgrade_tower(target_tower,true);
 			//instance->decrease_coin(val_top);
 			BreakManager::instance()->decrease_coin_cmd(val_top);

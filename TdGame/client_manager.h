@@ -107,34 +107,6 @@ public:
 		
 	}
 
-	//放置防御塔命令
-	void place_tower_cmd(TowerType type, const SDL_Point& idx)
-	{
-		Command cmd{};
-		cmd.frame = current_frame + 1; 
-		cmd.player_Id = id_player;
-		cmd.x = idx.x;
-		cmd.y = idx.y;
-		cmd.type = CommandType::BuildTower;
-		cmd.towerType = type;
-
-		send(sock, (char*)&cmd, sizeof(cmd), 0);
-	}
-
-	//升级防御塔命令
-	void upgrade_tower_cmd(TowerType type, const SDL_Point& idx)
-	{
-		Command cmd{};
-		cmd.frame = current_frame + 1; 
-		cmd.player_Id = id_player;
-		cmd.x = idx.x;
-		cmd.y = idx.y;
-		cmd.type = CommandType::UpgradeTower;
-		cmd.towerType = type;
-
-		send(sock, (char*)&cmd, sizeof(cmd), 0);
-	}
-
 	void simulate_frame()
 	{
 		// 处理所有本帧命令
@@ -144,16 +116,17 @@ public:
 		}
 		pendingCommands.clear();
 
-		current_frame++;
+		current_frame =  ClientCore::instance()->get_current_frame();
+		(*current_frame)++;
 	}
 
 private:
 	int id_player = 0;                                                  //玩家id
 	int random_seed = 1;                                                //随机数种子
+	uint32_t* current_frame = nullptr;                                  //当前的逻辑帧
 	SOCKET sock;                                                        //套接字
 	Stage stage = Stage::Waiting;                                       //当前游戏阶段
 	std::string str_address;                                            //服务器地址
-	uint32_t current_frame = 0;                                  //当前帧率
 	std::vector<Command> pendingCommands;                               //当前帧的所有命令
 
 private:
@@ -167,6 +140,7 @@ private:
 			{
 				pendingCommands.push_back(cmd);
 			}
+			//std::this_thread::sleep_for(std::chrono::milliseconds(100));
 		}
 	}
 
@@ -178,13 +152,15 @@ private:
 		switch (cmd.type)
 		{
 		case CommandType::BuildTower:
-			std::cout << 46486 << std::endl;
+			std::cout << "接受到建造防御塔命令" << std::endl;
 			instance->place_tower(cmd.towerType, idx);
 			break;
 		case CommandType::UpgradeTower:
+			std::cout << "接受到升级防御塔命令" << std::endl;
 			instance->upgrade_tower(idx);
 			break;
 		case CommandType::SpawnEnemy:
+			std::cout << "接受到建开始生成敌人命令" << std::endl;
 			WaveManager::instance()->set_is_wave_started(true);
 			break;
 		case CommandType::SpawnRand:
@@ -196,6 +172,9 @@ private:
 				PlayerManager* instance = PlayerManager::instance();
 				switch (cmd.DargonType)
 				{
+				case DargonCommandType::Dargon_move:
+					instance->set_positon(Vector2(cmd.x, cmd.y));
+					break;
 				case DargonCommandType::Dargon_move_left:
 					instance->set_is_move_left(true);
 					break;
@@ -230,15 +209,19 @@ private:
 			}
 			break;
 		case CommandType::StartGame:
+			std::cout << "接受到开始游戏命令" << std::endl;
 			stage = ClientManager::Stage::Racing;
 			break;
 		case CommandType::UpdataFrame:
-			current_frame = cmd.current_frame;
+			current_frame =  ClientCore::instance()->get_current_frame();
+			*current_frame = cmd.current_frame;
 			break;
 		case CommandType::DecreaseCoin:
+			std::cout << "接受到减少金币命令" << std::endl;
 			CoinManager::instance()->decrease_coin(cmd.coin_count);
 			break;
 		case CommandType::increaseCoin:
+			std::cout << "接受到增加金币命令" << std::endl;
 			CoinManager::instance()->increase_coin(cmd.coin_count);
 			break;
 		}
