@@ -7,7 +7,6 @@
 #include "gunner_tower.h"
 #include "config_manager.h"
 #include "resources_manager.h"
-#include "client_manager.h"
 #include "httplib.h"
 
 
@@ -172,15 +171,9 @@ public:
 			= ResourcesManager::instance()->get_sound_pool();
 
 		Mix_PlayChannel(-1, sound_pool.find(ResID::Sound_PlaceTower)->second, 0);
-
-		if (is_start_thread == false)
-			return;
-
-		//玩家一 放置防御塔时给服务器发送请求
-		ClientManager::instance()->place_tower_thread(type,idx,level, tower->get_id());
 	}
 
-	//升级防御塔
+	//升级防御塔 第一种方式
 	void upgrade_tower(Tower*& target_tower, bool is_start_thread = false)
 	{
 		if (!target_tower)
@@ -195,12 +188,32 @@ public:
 
 		Mix_PlayChannel(-1, sound_pool.find(ResID::Sound_TowerLevelUp)->second, 0);
 
-		if (is_start_thread == false)
-			return;
+	}
 
-		int level = target_tower->get_level();
-		//玩家一 升级防御塔时更新服务器数据
-		ClientManager::instance()->uograde_tower_thread(level, target_tower->get_id());
+	//升级防御塔 第二种方式
+	void upgrade_tower(const SDL_Point& idx, bool is_start_thread = false)
+	{
+		static Vector2 position;
+		static const SDL_Rect& rect = ConfigManager::instance()->rect_tile_map;
+		position.x = rect.x + idx.x * SIZE_TILE + SIZE_TILE / 2;
+		position.y = rect.y + idx.y * SIZE_TILE + SIZE_TILE / 2;
+
+		//寻找塔并且更新等级
+		for (auto tower : tower_list)
+		{
+			if (tower->get_position() == position)
+			{
+				tower->set_level(tower->get_level() == 9 ? 9 : tower->get_level() + 1);
+				break;
+			}
+		}
+
+		//播放升级音效
+		static	ConfigManager* instance = ConfigManager::instance();
+		static const ResourcesManager::SoundPool& sound_pool
+			= ResourcesManager::instance()->get_sound_pool();
+
+		Mix_PlayChannel(-1, sound_pool.find(ResID::Sound_TowerLevelUp)->second, 0);
 	}
 
 	TowerList& get_tower_list() 

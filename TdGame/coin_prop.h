@@ -5,6 +5,7 @@
 #include "tile.h"
 #include "resources_manager.h"
 #include "animation.h"
+#include "client_core.h"
 
 #include <SDL.h>
 
@@ -39,7 +40,7 @@ public:
 		anim_idle.set_frame_data(tex_coin, 8, 1, { 0,1,2,3,4,5,6,7 });
 
 		//随机设置向左或者向右跳跃
-		velocity.x = (rand() % 2 ? 1 : -1) * 2 * SIZE_TILE;
+		velocity.x = (ClientCore::instance()->get_random() % 2 ? 1 : -1) * 2 * SIZE_TILE;
 		velocity.y = -3 * SIZE_TILE;
 	}
 	~CoinProp() = default;

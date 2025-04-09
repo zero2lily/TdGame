@@ -25,4 +25,9 @@
       <Filter>源文件\cJSON</Filter>
     </ClCompile>
   </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="tower_type.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+  </ItemGroup>
 </Project>

@@ -5,6 +5,7 @@
 #include "config_manager.h"
 #include "enemy_manager.h"
 #include "coin_manager.h"
+#include "break_manager.h"
 
 #include <set>
 
@@ -95,6 +96,11 @@ public:
 		}
 	}
 
+	void set_is_wave_started(bool val)
+	{
+		is_wave_started = val;
+	}
+
 protected:
 	WaveManager()
 	{
@@ -110,7 +116,10 @@ protected:
 		timer_start_wave.set_on_timeout(
 			[&]()
 			{
-				is_wave_started = true;
+				//当前玩家已经准备好
+				BreakManager::instance()->ready_wave_cmd();
+
+				//is_wave_started = true;
 				//设置敌人出怪计时器
 				timer_spawn_enemy.set_wait_time(wave_list[idx_wave].spawn_event_list[0].interval);
 				timer_spawn_enemy.restart();

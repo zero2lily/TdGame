@@ -1,10 +1,15 @@
 #pragma once
 
 #include "manager.h"
+#include "client_core.h"
+#include "tower_manager.h"
+#include "wave_manager.h"
+#include "coin_manager.h"
+#include "player_manager.h"
 
 #include <string>
 
-class TowerManager;
+class WaveManager;
 
 class ClientManager : public Manager<ClientManager>
 {
@@ -47,81 +52,43 @@ public:
 		server_addr.sin_family = AF_INET;
 		server_addr.sin_port = htons(25565);
 		inet_pton(AF_INET, str_stream.str().c_str(), &server_addr.sin_addr);
-		//简历连接
+		//建立连接
 		connect(sock, (sockaddr*)&server_addr, sizeof(server_addr));
-	}
-
-	void play_login_server()
-	{
-		cJSON* request = cJSON_CreateObject();
-		cJSON_AddStringToObject(request, "type", "login");
-		char* request_str = cJSON_Print(request);
-		//请求数据
-		send(sock, request_str, strlen(request_str), 0);
-		free(request_str);
-		cJSON_Delete(request);
-
-		char buffer[4096];
-		//接收到数据 成功执行时，返回接收到的字节数
-		int bytes_received = recv(sock, buffer, sizeof(buffer), 0);
-		if (bytes_received < 0)
-		{
-			std::cerr << "登录服务器失败" << std::endl;
-			exit(-1);
-		}
-		if (bytes_received > 0)
-		{
-			buffer[bytes_received] = '\0';
-			cJSON* root = cJSON_Parse(buffer);
-			if (root)
-			{
-				cJSON* id = cJSON_GetObjectItem(root, "type");
-				if (id->valueint == 0)
-				{
-					std::cerr << "人数已满，登录服务器失败" << std::endl;
-					exit(-1);
-				}
-				id_player = id->valueint;
-				cJSON_Delete(root);
-			}
-		}
+		// 获取分配的玩家ID
+		recv(sock, (char*)&id_player, 1, 0); 
 	}
 
 	ClientManager()
 	{
-		connect_to_server();
+		sock = ClientCore::instance()->get_sock();
+		id_player = ClientCore::instance()->get_id_player();
 	}
 
 	~ClientManager() = default;
 
 	//服务器发出开始游戏指令 同步开始游戏
-	void is_game_start()
+	void start_game()
 	{
-		char buffer[1024];
-		int bytes_received = recv(sock, buffer, sizeof(buffer), 0);
-		if (bytes_received > 0)
+		Command cmd;
+		if (recv(sock, (char*)&cmd, sizeof(cmd), MSG_PEEK) > 0)
 		{
-			buffer[bytes_received] = '\0';
-			if (strcmp(buffer, "GAME_START") == 0)
+			recv(sock, (char*)&cmd, sizeof(cmd), 0);
+			if (cmd.type == CommandType::StartGame)
 			{
+				//std::cout << 165156168 << std::endl;
 				stage = ClientManager::Stage::Racing;
 			}
 		}
+
+		std::cout << "游戏开始！" << std::endl;
+		//开启游戏主线程
+		std::thread receiver(&ClientManager::receiveThread, this);
+		receiver.detach();
 	}
 
 	const int get_random_seed() const
 	{
 		return random_seed;
-	}
-
-	const SOCKET get_sock() const
-	{
-		return sock;
-	}
-
-	const int get_id_player() const
-	{
-		return id_player;
 	}
 
 	const Stage get_stage() const 
@@ -132,82 +99,148 @@ public:
 public:
 
 #pragma region 主线程解释
-	//玩家一控制防御塔的放置 需要获取玩家二的龙的位置
-	//玩家二控制龙的移动 需要获取玩家一的所有防御塔的实时位置、所有金币的实时位置
+	//玩家0控制防御塔的放置 需要获取玩家二的龙的位置
+	//玩家1控制龙的移动 需要获取玩家一的所有防御塔的实时位置、所有金币的实时位置
 #pragma endregion
 	void main_thread()
 	{
 		
 	}
 
-	//放置防御塔线程
-	void place_tower_thread(TowerType type, const SDL_Point& idx, int level,int id)
+	//放置防御塔命令
+	void place_tower_cmd(TowerType type, const SDL_Point& idx)
 	{
-		std::thread([type, idx, level, id, this]()
-			{
-				cJSON* request = cJSON_CreateObject();
-				if (!request) {
-					std::cerr << "失败创建root" << std::endl;
-					return;
-				}
-				cJSON_AddStringToObject(request, "type", "add_tower");
+		Command cmd{};
+		cmd.frame = current_frame + 1; 
+		cmd.player_Id = id_player;
+		cmd.x = idx.x;
+		cmd.y = idx.y;
+		cmd.type = CommandType::BuildTower;
+		cmd.towerType = type;
 
-				cJSON* data = cJSON_CreateObject();
-				cJSON_AddNumberToObject(data, "x", idx.x);
-				cJSON_AddNumberToObject(data, "y", idx.y);
-				cJSON_AddNumberToObject(data, "level", level);
-				cJSON_AddNumberToObject(data, "id", id);
-				switch (type)
-				{
-				case Archer:
-
-					cJSON_AddStringToObject(data, "type_tower", "Archer");
-					break;
-				case Axeman:
-					cJSON_AddStringToObject(data, "type_tower", "Axeman");
-					break;
-				case Gunner:
-					cJSON_AddStringToObject(data, "type_tower", "Gunner");
-					break;
-				}
-				cJSON_AddItemToObject(request, "data", data);
-
-				char* request_str = cJSON_Print(request);
-				//请求数据
-				send(sock, request_str, strlen(request_str), 0);
-				//释放内存
-				free(request_str);
-				cJSON_Delete(request);
-			}).detach();
+		send(sock, (char*)&cmd, sizeof(cmd), 0);
 	}
 
-	void uograde_tower_thread(int level,int id)
+	//升级防御塔命令
+	void upgrade_tower_cmd(TowerType type, const SDL_Point& idx)
 	{
-		std::thread([level, id, this]()
-			{
-				cJSON* request = cJSON_CreateObject();
-				if (!request) {
-					std::cerr << "失败创建root" << std::endl;
-					return;
-				}
-				cJSON_AddStringToObject(request, "type", "upgrade_tower");
-				cJSON_AddNumberToObject(request, "id", id);
-				cJSON_AddNumberToObject(request, "level", level);
+		Command cmd{};
+		cmd.frame = current_frame + 1; 
+		cmd.player_Id = id_player;
+		cmd.x = idx.x;
+		cmd.y = idx.y;
+		cmd.type = CommandType::UpgradeTower;
+		cmd.towerType = type;
 
-				char* request_str = cJSON_Print(request);
-				//请求数据
-				send(sock, request_str, strlen(request_str), 0);
-				//释放内存
-				free(request_str);
-				cJSON_Delete(request);
-			}).detach();
+		send(sock, (char*)&cmd, sizeof(cmd), 0);
 	}
 
+	void simulate_frame()
+	{
+		// 处理所有本帧命令
+		for (auto& cmd : pendingCommands) 
+		{
+			execute_command(cmd);
+		}
+		pendingCommands.clear();
+
+		current_frame++;
+	}
 
 private:
-	int id_player = 0;     //自己是玩家1还是玩家二
-	int random_seed = 1;   //随机数种子
-	SOCKET sock;           //套接字
-	Stage stage = Stage::Waiting;       //当前游戏阶段
-	std::string str_address;            //服务器地址
+	int id_player = 0;                                                  //玩家id
+	int random_seed = 1;                                                //随机数种子
+	SOCKET sock;                                                        //套接字
+	Stage stage = Stage::Waiting;                                       //当前游戏阶段
+	std::string str_address;                                            //服务器地址
+	uint32_t current_frame = 0;                                  //当前帧率
+	std::vector<Command> pendingCommands;                               //当前帧的所有命令
+
+private:
+	//接收指令线程
+	void receiveThread() 
+	{
+		while (true)
+		{
+			Command cmd;
+			if (recv(sock, (char*)&cmd, sizeof(cmd), 0) > 0)
+			{
+				pendingCommands.push_back(cmd);
+			}
+		}
+	}
+
+	//处理本帧所有的操作
+	void execute_command(const Command& cmd)
+	{
+		static TowerManager* instance = TowerManager::instance();
+		SDL_Point idx = { cmd.x,cmd.y };
+		switch (cmd.type)
+		{
+		case CommandType::BuildTower:
+			std::cout << 46486 << std::endl;
+			instance->place_tower(cmd.towerType, idx);
+			break;
+		case CommandType::UpgradeTower:
+			instance->upgrade_tower(idx);
+			break;
+		case CommandType::SpawnEnemy:
+			WaveManager::instance()->set_is_wave_started(true);
+			break;
+		case CommandType::SpawnRand:
+			ClientCore::instance()->set_random(cmd.random);
+			break;
+		case CommandType::DragonMove:
+			//更新龙的状态
+			{
+				PlayerManager* instance = PlayerManager::instance();
+				switch (cmd.DargonType)
+				{
+				case DargonCommandType::Dargon_move_left:
+					instance->set_is_move_left(true);
+					break;
+				case DargonCommandType::Dargon_move_right:
+					instance->set_is_move_right(true);
+					break;
+				case DargonCommandType::Dargon_move_up:
+					instance->set_is_move_up(true);
+					break;
+				case DargonCommandType::Dargon_move_down:
+					instance->set_is_move_down(true);
+					break;
+				case DargonCommandType::Dargon_release_skill_j:
+					instance->on_release_flash();
+					break;
+				case DargonCommandType::Dargon_release_skill_K:
+					instance->on_release_impact();
+					break;
+				case DargonCommandType::Dargon_stop_move_left:
+					instance->set_is_move_left(false);
+					break;
+				case DargonCommandType::Dargon_stop_move_right:
+					instance->set_is_move_right(false);
+					break;
+				case DargonCommandType::Dargon_stop_move_up:
+					instance->set_is_move_up(false);
+					break;
+				case DargonCommandType::Dargon_stop_move_down:
+					instance->set_is_move_down(false);
+					break;
+				}
+			}
+			break;
+		case CommandType::StartGame:
+			stage = ClientManager::Stage::Racing;
+			break;
+		case CommandType::UpdataFrame:
+			current_frame = cmd.current_frame;
+			break;
+		case CommandType::DecreaseCoin:
+			CoinManager::instance()->decrease_coin(cmd.coin_count);
+			break;
+		case CommandType::increaseCoin:
+			CoinManager::instance()->increase_coin(cmd.coin_count);
+			break;
+		}
+	}
 };

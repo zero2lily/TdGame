@@ -175,8 +175,10 @@ protected:
 
 		if (val_top > 0 &&  val_top <= instance->get_current_coin_num())
 		{
-			TowerManager::instance()->upgrade_tower(target_tower,true);
-			instance->decrease_coin(val_top);
+			ClientManager::instance()->upgrade_tower_cmd(target_tower->get_tower_type(), idx_tile_selected);
+			//TowerManager::instance()->upgrade_tower(target_tower,true);
+			//instance->decrease_coin(val_top);
+			BreakManager::instance()->decrease_coin_cmd(val_top);
 		}
 	}
 
@@ -191,10 +193,10 @@ protected:
 	}
 
 private:
-	int upgrade_reg_top = 0, upgrade_reg_left = 0, upgrade_reg_right = 0;; //ÏÂÒ»¸öµÈ¼¶µÄ·ÀÓùËþ¹¥»÷·¶Î§
-	SDL_Texture* tex_axeman = nullptr;                              //Éý¼¶axemanÂÖÅÌ
-	SDL_Texture* tex_archer = nullptr;                              //Éý¼¶axemanÂÖÅÌ
-	SDL_Texture* tex_gunner = nullptr;                              //Éý¼¶axemanÂÖÅÌ
+	int upgrade_reg_top = 0, upgrade_reg_left = 0, upgrade_reg_right = 0;;  //ÏÂÒ»¸öµÈ¼¶µÄ·ÀÓùËþ¹¥»÷·¶Î§
+	SDL_Texture* tex_axeman = nullptr;                                      //Éý¼¶axemanÂÖÅÌ
+	SDL_Texture* tex_archer = nullptr;                                      //Éý¼¶axemanÂÖÅÌ
+	SDL_Texture* tex_gunner = nullptr;                                      //Éý¼¶axemanÂÖÅÌ
 	SDL_Texture* tex_hovered_axeman = nullptr;                              //Éý¼¶axemanÂÖÅÌ
 	SDL_Texture* tex_hovered_archer = nullptr;                              //Éý¼¶axemanÂÖÅÌ
 	SDL_Texture* tex_hovered_gunner = nullptr;                              //Éý¼¶axemanÂÖÅÌ

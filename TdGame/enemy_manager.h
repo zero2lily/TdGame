@@ -11,6 +11,7 @@
 #include "goblin_priest_enemy.h"
 #include "coin_manager.h"
 #include "bullet_manager.h"
+#include "client_core.h"
 
 #include <vector>
 #include <SDL.h>
@@ -244,7 +245,7 @@ private:
 	{
 		static CoinManager* instance = CoinManager::instance();
 
-		if ((double)(rand() % 100 / 100) <= ratio)
+		if ((double)(ClientCore::instance()->get_random() % 100 / 100) <= ratio)
 		{
 			instance->spawn_coin_prop(position);
 		}

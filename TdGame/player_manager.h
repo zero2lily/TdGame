@@ -8,6 +8,7 @@
 #include "resources_manager.h"
 #include "enemy_manager.h"
 #include "coin_manager.h"
+#include "break_manager.h"
 
 #include <SDL.h>
 
@@ -18,6 +19,7 @@ class PlayerManager : public Manager<PlayerManager>
 public:
 	void on_input(const SDL_Event& event)
 	{
+		static BreakManager* instance = BreakManager::instance();
 		switch (event.type)
 		{
 		case SDL_KEYDOWN:
@@ -25,22 +27,28 @@ public:
 			switch (event.key.keysym.sym) 
 			{
 			case SDLK_a:
-				is_move_left = true;
+				//is_move_left = true;
+				instance->dragon_move_left_cmd();
 				break;
 			case SDLK_d:
-				is_move_right = true;
+				//is_move_right = true;
+				instance->dragon_move_right_cmd();
 				break;
 			case SDLK_w:
-				is_move_up = true;
+				//is_move_up = true;
+				instance->dragon_move_up_cmd();
 				break;
 			case SDLK_s:
-				is_move_down = true;
+				//is_move_down = true;
+				instance->dragon_move_down_cmd();
 				break;
 			case SDLK_j:
-				on_release_flash();
+				//on_release_flash();
+				instance->dargon_release_skill_j_cmd();
 				break;
 			case SDLK_k:
-				on_release_impact();
+				//on_release_impact();
+				instance->dargon_release_skill_K_cmd();
 				break;
 			default:
 				break;
@@ -50,16 +58,20 @@ public:
 			switch (event.key.keysym.sym)
 			{
 			case SDLK_a:
-				is_move_left = false;
+				//is_move_left = false;
+				instance->dragon_stop_left_cmd();
 				break;
 			case SDLK_d:
-				is_move_right = false;
+				//is_move_right = false;
+				instance->dragon_stop_right_cmd();
 				break;
 			case SDLK_w:
-				is_move_up = false;
+				//is_move_up = false;
+				instance->dragon_stop_up_cmd();
 				break;
 			case SDLK_s:
-				is_move_down = false;
+				//is_move_down = false;
+				instance->dragon_stop_down_cmd();
 				break;
 			default:
 				break;
@@ -238,6 +250,36 @@ public:
 		return mp;
 	}
 
+	void set_is_move_left(bool val)
+	{
+		is_move_left = val;
+	}
+
+	void set_is_move_right(bool val)
+	{
+		is_move_right = val;
+	}
+
+	void set_is_move_down(bool val)
+	{
+		is_move_down = val;
+	}
+
+	void set_is_move_up(bool val)
+	{
+		is_move_up = val;
+	}
+
+	void set_is_releasing_flash(bool val)
+	{
+		is_releasing_flash = val;
+	}
+
+	void set_is_releasing_impact(bool val)
+	{
+		is_releasing_impact = val;
+	}
+
 protected:
 	PlayerManager()
 	{
@@ -370,7 +412,7 @@ private:
 
 	Facing facing = Facing::Left;                 //ÁúµÄ³¯Ïò
 
-private:
+public:
 	void on_release_flash()
 	{
 		if (!can_release_flash || is_releasing_flash)

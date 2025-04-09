@@ -27,6 +27,7 @@
 #include "player_manager.h"
 #include "banner.h"
 #include "client_manager.h"
+#include "client_core.h"
 
 #include "httplib.h"
 
@@ -46,9 +47,15 @@ public:
 		//获取高进度定时器频率(每秒钟高精度定时器的次数);
 		const Uint64 counter_freq = SDL_GetPerformanceFrequency();
 
+		static ClientManager* instance = ClientManager::instance();
+
 		while (!is_quit)
 		{
+			//处理所有的逻辑帧
+			instance->simulate_frame();
+
 			//SDL_PollEvent：所有的event都放在这里面，将event一个一个取出来
+			//发送所有当前帧的命令
 			while (SDL_PollEvent(&event))
 				on_input();
 
@@ -81,10 +88,8 @@ public:
 public:               
 	void link_to_server()
 	{
-		//玩家登录服务器 
-		ClientManager::instance()->play_login_server();
 		//设置轮盘按钮是否可以按下
-		if (ClientManager::instance()->get_id_player() == 1)
+		if (ClientCore::instance()->get_id_player() == 0)
 		{
 			place_panel->set_is_can_click(true);
 			upgrade_panel->set_is_can_click(true);
@@ -92,114 +97,119 @@ public:
 
 		
 		//游戏开始
-		ClientManager::instance()->is_game_start();
+		ClientManager::instance()->start_game();
+		//ClientManager::instance()->place_tower_cmd(Archer, { 9,10 });
+
+#pragma region 删除
+		//const int& id_player = ClientManager::instance()->get_id_player();
+		//const SOCKET& sock = ClientManager::instance()->get_sock();
+		////开启游戏主线程
+		//std::thread([id_player, sock]()
+		//	{
+		//		int last_num_tower = 0;
+		//		static TowerManager* instance = TowerManager::instance();
+		//		while (true)
+		//		{
+		//			if (id_player == 1)
+		//			{
+		//				cJSON* request = cJSON_CreateObject();
+		//				cJSON_AddStringToObject(request, "type", "get_dragon_postition");
+
+		//				char* request_str = cJSON_Print(request);
+		//				send(sock, request_str, strlen(request_str), 0);
+
+		//				free(request_str);
+		//				cJSON_Delete(request);
+
+		//				char buffer[1024];
+		//				int bytes_received = recv(sock, buffer, sizeof(buffer), 0);
+		//				if (bytes_received > 0)
+		//				{
+		//					buffer[bytes_received] = '\0';
+		//					cJSON* root = cJSON_Parse(buffer);
+		//					if (root)
+		//					{
+
+		//					}
+		//				}
+
+		//			}
+		//			else if (id_player == 2)
+		//			{
+		//				cJSON* request = cJSON_CreateObject();
+		//				cJSON_AddStringToObject(request, "type", "get_towers");
+
+		//				//请求数据
+		//				char* request_str = cJSON_Print(request);
+		//				send(sock, request_str, strlen(request_str), 0);
+
+		//				free(request_str);
+		//				cJSON_Delete(request);
+
+		//				char buffer[4096];
+		//				int bytes_received = recv(sock, buffer, sizeof(buffer), 0);
+
+		//				//如果成功接收到数据
+		//				if (bytes_received > 0)
+		//				{
+		//					buffer[bytes_received] = '\0';
+		//					cJSON* root = cJSON_Parse(buffer);
+		//					if (root)
+		//					{
+		//						cJSON* data = cJSON_GetObjectItem(root, "data");
+		//						//如果数据不为空
+		//						if (data)
+		//						{
+		//							int tower_count = cJSON_GetArraySize(data);
+		//							int now_count = 0;
+		//							cJSON* now_tower;
+		//							cJSON_ArrayForEach(now_tower, data)
+		//							{
+		//								//没有放置过的防御塔进行放置
+		//								if (now_count >= last_num_tower)
+		//								{
+		//									int x = cJSON_GetObjectItem(now_tower, "x")->valueint;
+		//									int y = cJSON_GetObjectItem(now_tower, "y")->valueint;
+		//									int level = cJSON_GetObjectItem(now_tower, "level")->valueint;
+		//									std::string type = (cJSON_GetObjectItem(now_tower, "type_tower")->valuestring);
+		//									SDL_Point idx = { x,y };
+		//									if (type == "Archer")
+		//									{
+		//										instance->place_tower(TowerType::Archer, idx, level);
+		//									}
+		//									else if (type == "Axeman")
+		//									{
+		//										instance->place_tower(TowerType::Axeman, idx, level);
+		//									}
+		//									else
+		//									{
+		//										instance->place_tower(TowerType::Gunner, idx, level);
+		//									}
+		//								}
+		//								else
+		//								{
+		//									//放置过的进行等级更新
+		//									int level = cJSON_GetObjectItem(now_tower, "level")->valueint;
+		//									Tower*& tower = instance->get_tower_list()[now_count];
+		//									if (level != tower->get_level())
+		//									{
+		//										instance->upgrade_tower(tower);
+		//									}
+		//								}
+		//								now_count++;
+		//							}
+		//							last_num_tower = tower_count;
+		//						}
+		//						cJSON_Delete(root);
+		//					}
+		//				}
+		//			}
+		//			std::this_thread::sleep_for(std::chrono::milliseconds(100));
+		//		}
+		//	}).detach();
+#pragma endregion
+
 		
-		const int& id_player = ClientManager::instance()->get_id_player();
-		const SOCKET& sock = ClientManager::instance()->get_sock();
-		//开启游戏主线程
-		std::thread([id_player,sock]()
-			{
-				int last_num_tower = 0;
-				static TowerManager* instance = TowerManager::instance();
-				while (true)
-				{
-					if (id_player == 1)
-					{
-						cJSON* request = cJSON_CreateObject();
-						cJSON_AddStringToObject(request, "type", "get_dragon_postition");
-
-						char* request_str = cJSON_Print(request);
-						send(sock, request_str, strlen(request_str), 0);
-
-						free(request_str);
-						cJSON_Delete(request);
-
-						char buffer[1024];
-						int bytes_received = recv(sock, buffer, sizeof(buffer), 0);
-						if (bytes_received > 0)
-						{
-							buffer[bytes_received] = '\0';
-							cJSON* root = cJSON_Parse(buffer);
-							if (root)
-							{
-
-							}
-						}
-
-					}
-					else if (id_player == 2)
-					{
-						cJSON* request = cJSON_CreateObject();
-						cJSON_AddStringToObject(request, "type", "get_towers");
-
-						//请求数据
-						char* request_str = cJSON_Print(request);
-						send(sock, request_str, strlen(request_str), 0);
-
-						free(request_str);
-						cJSON_Delete(request);
-
-						char buffer[4096];
-						int bytes_received = recv(sock, buffer, sizeof(buffer), 0);
-
-						//如果成功接收到数据
-						if (bytes_received > 0)
-						{
-							buffer[bytes_received] = '\0';
-							cJSON* root = cJSON_Parse(buffer);
-							if (root)
-							{
-								cJSON* data = cJSON_GetObjectItem(root, "data");
-								//如果数据不为空
-								if (data)
-								{
-									int tower_count = cJSON_GetArraySize(data);
-									int now_count = 0;
-									cJSON* now_tower;
-									cJSON_ArrayForEach(now_tower, data)
-									{
-										//没有放置过的防御塔进行放置
-										if (now_count >= last_num_tower)
-										{
-											int x = cJSON_GetObjectItem(now_tower, "x")->valueint;
-											int y = cJSON_GetObjectItem(now_tower, "y")->valueint;
-											int level = cJSON_GetObjectItem(now_tower, "level")->valueint;
-											std::string type = (cJSON_GetObjectItem(now_tower, "type_tower")->valuestring);
-											SDL_Point idx = { x,y };
-											if (type == "Archer")
-											{
-												instance->place_tower(TowerType::Archer, idx, level);
-											}
-											else if (type == "Axeman")
-											{
-												instance->place_tower(TowerType::Axeman, idx, level);
-											}
-											else
-											{
-												instance->place_tower(TowerType::Gunner, idx, level);
-											}
-										}
-										else
-										{
-											//放置过的进行等级更新
-											int level = cJSON_GetObjectItem(now_tower, "level")->valueint;
-											Tower*& tower = instance->get_tower_list()[now_count];
-											if (level != tower->get_level())
-											{
-												instance->upgrade_tower(tower);
-											}
-										}
-										now_count++;
-									}
-									last_num_tower = tower_count;
-								}
-								cJSON_Delete(root);
-							}
-						}
-					}
-					std::this_thread::sleep_for(std::chrono::milliseconds(100));
-				}
-			}).detach();
 	}
 
 	GameManager()
@@ -304,16 +314,19 @@ private:
 		exit(-1);
 	}
 
+
+
 	void on_input()
 	{
-		static SDL_Point pos_center;
 		//单元格坐标
 		static SDL_Point idx_tile_selected;
 		static ConfigManager* instance = ConfigManager::instance();
 		static ResourcesManager::SoundPool sound_pool = ResourcesManager::instance()->get_sound_pool();
-		const int& id_player = ClientManager::instance()->get_id_player();
+		const int& id_player = ClientCore::instance()->get_id_player();
+
 		//当前点击到了哪个防御塔
 		Tower* tower = nullptr;
+		static SDL_Point pos_center;
 
 		switch (event.type)
 		{
@@ -323,7 +336,6 @@ private:
 		case SDL_MOUSEBUTTONDOWN:
 			if (instance->is_game_over)
 				break;
-			
 			if (get_cursor_idx_tile(idx_tile_selected, event.motion.x, event.motion.y))
 			{
 				get_selected_tile_center_pos(pos_center, idx_tile_selected);
@@ -356,7 +368,12 @@ private:
 		{
 			place_panel->on_input(event);
 			upgrade_panel->on_input(event);
-			PlayerManager::instance()->on_input(event);
+			//设置轮盘按钮是否可以按下
+			if (ClientCore::instance()->get_id_player() == 1)
+			{
+				PlayerManager::instance()->on_input(event);
+			}
+			
 		}
 	}
 

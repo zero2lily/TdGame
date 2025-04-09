@@ -1,7 +1,7 @@
 {
 	"basic":	{
 		"window_width":	1480,
-		"window_height":	400,
+		"window_height":	1000,
 		"window_title":	"村庄保卫战！"
 	},
 	"player":	{
@@ -39,7 +39,7 @@
 			"hp":	80,
 			"speed":	0.600000023841858,
 			"damage":	1,
-			"reward_ratio":	1,
+			"reward_ratio":	0.8,
 			"recover_interval":	10,
 			"recover_range":	-1,
 			"recover_intensity":	25

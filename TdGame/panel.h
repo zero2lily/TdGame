@@ -3,6 +3,7 @@
 #include "resources_manager.h"
 #include "tile.h"
 #include "client_manager.h"
+#include "break_manager.h"
 
 #include <SDL.h>
 #include <string>

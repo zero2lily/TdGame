@@ -130,8 +130,10 @@ protected:
 
 		if (val_top <= instance->get_current_coin_num())
 		{
-			TowerManager::instance()->place_tower(TowerType::Axeman, idx_tile_selected, 0, true);
-			instance->decrease_coin(val_top);
+			//TowerManager::instance()->place_tower(TowerType::Axeman, idx_tile_selected, 0, true);
+			ClientManager::instance()->place_tower_cmd(TowerType::Axeman, idx_tile_selected);
+			BreakManager::instance()->decrease_coin_cmd(val_top);
+			//instance->decrease_coin(val_top);
 		}
 	}
 
@@ -141,8 +143,10 @@ protected:
 
 		if (val_left <= instance->get_current_coin_num())
 		{
-			TowerManager::instance()->place_tower(TowerType::Archer, idx_tile_selected, 0, true);
-			instance->decrease_coin(val_left);
+			//TowerManager::instance()->place_tower(TowerType::Archer, idx_tile_selected, 0, true);
+			ClientManager::instance()->place_tower_cmd(TowerType::Archer, idx_tile_selected);
+			BreakManager::instance()->decrease_coin_cmd(val_left);
+			//instance->decrease_coin(val_left);
 		}
 	}
 
@@ -152,8 +156,10 @@ protected:
 
 		if (val_right <= instance->get_current_coin_num())
 		{
-			TowerManager::instance()->place_tower(TowerType::Gunner, idx_tile_selected, 0, true);
-			instance->decrease_coin(val_right);
+			//TowerManager::instance()->place_tower(TowerType::Gunner, idx_tile_selected, 0, true);
+			ClientManager::instance()->place_tower_cmd(TowerType::Gunner, idx_tile_selected);
+			BreakManager::instance()->decrease_coin_cmd(val_right);
+			//instance->decrease_coin(val_right);
 		}
 	}
 };

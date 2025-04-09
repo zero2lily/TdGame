@@ -176,5 +176,8 @@
     <ClInclude Include="client_core.h">
       <Filter>头文件\manager</Filter>
     </ClInclude>
+    <ClInclude Include="break_manager.h">
+      <Filter>头文件\manager</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
